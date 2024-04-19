@@ -13,6 +13,7 @@ export const verifyJWT = asyncHandler(async (req: CustomRequest , res: Response,
   // headers: {
   //     authorization: Bearer token
   // }
+  console.log(req?.headers?.authorization)
   if (req?.headers?.authorization?.startsWith("Bearer")) {
     const token = req.headers.authorization.split(" ")[1];
     jwt.verify(token, key, (error : any, decode : any) => {

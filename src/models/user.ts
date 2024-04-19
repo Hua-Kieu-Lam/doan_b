@@ -31,7 +31,7 @@ const userSchema: Schema = new Schema({
   },
   password: {
     type: String,
-    required: true,
+    // required: true,
   },
   phoneNumber: {
     type: String,
@@ -55,6 +55,9 @@ const userSchema: Schema = new Schema({
       },
       quantity: Number,
       color: String,
+      thumbnail: String,
+      title: String,
+      price: Number,
     },
   ],
   wishlist: [
@@ -76,13 +79,13 @@ const userSchema: Schema = new Schema({
     timestamps: true,
   });
 
-  userSchema.pre("save", function (next) {
-    if (this.isModified(("password"))) {
-      next();
-    }
-    const salt = bcrypt.genSaltSync(10);
-    this.password = bcrypt.hashSync(this.password, salt);
-  });
+  // userSchema.pre("save", function (next) {
+  //   if (this.isModified(("password"))) {
+  //     next();
+  //   }
+  //   const salt = bcrypt.genSaltSync(10);
+  //   this.password = bcrypt.hashSync(this.password, salt);
+  // });
   
   userSchema.methods = {
     checkPassword: async function (password : any) {

@@ -2,6 +2,7 @@ import { Request, Response } from "express"
 import Product, { IProduct } from "../models/product";
 const asyncHandler = require("express-async-handler");
 import slugify from "slugify";
+import { ObjectId } from 'mongodb';
 
 interface CustomRequest extends Request {
     files: any;
@@ -9,13 +10,17 @@ interface CustomRequest extends Request {
 }
 
 const handleCreateProduct = asyncHandler(async (req: CustomRequest, res: Response) => {
-  const { name, brand, description, price, shopListId,quantity,categoryId, sold, color } = req.body;
+  const { name, brand, description, price, shopListId, quantity, categoryId, color } = req.body;
   const thumb = req?.files?.thumb[0]?.path;
   const images = req?.files?.image?.map((item: any) => item.path);
 
-  if (!(name && brand && description && price && categoryId && color && sold && quantity && shopListId)) {
+
+  if (!(name && brand && description && price && categoryId && color && quantity && shopListId)) {
     throw new Error("Missing input");
   }
+
+  req.body.categoryId = new ObjectId(categoryId);
+  req.body.shopListId = new ObjectId(shopListId);
 
   if (req.body && req.body.name) {
     req.body.slug = slugify(req.body.name);
@@ -49,11 +54,39 @@ const handleGetProductById = asyncHandler(async (req : Request, res: Response) =
         path: "postedBy",
         select: "username avatar",
       },
-    });
+    }).populate("categoryId", "name");
     return res.status(200).json({
       success: product ? true : false,
       product: product ? product : "Get a product failed",
     });
+});
+
+const handleGetProductByShopId = asyncHandler(async (req : Request, res: Response) => {
+  const { sid } = req.params;
+  if (!sid) {
+    throw new Error("Missing shop id");
+  }
+  
+  const product = await Product.find({ shopListId: sid }).populate("categoryId", "name description");
+
+  return res.status(200).json({
+    success: product ? true : false,
+    product: product ? product : "Get a product failed",
+  });
+});
+
+const handleGetProductByCategoryId = asyncHandler(async (req : Request, res: Response) => {
+  const { pid } = req.params;
+  if (!pid) {
+    throw new Error("Missing category id");
+  }
+  
+  const product = await Product.find({ categoryId: pid });
+
+  return res.status(200).json({
+    success: product ? true : false,
+    product: product ? product : "Get a product failed",
+  });
 });
 
 const handleGetAllProduct = asyncHandler(async (req: Request, res: Response) => {
@@ -76,8 +109,8 @@ const handleGetAllProduct = asyncHandler(async (req: Request, res: Response) => 
       formatQuery.name = { $regex: queries.name, $options: "i" };
     }
   
-    if (queries?.category) {
-      formatQuery.category = { $regex: queries.category, $options: "i" };
+    if (queries?.brand) {
+      formatQuery.brand = { $regex: queries.brand, $options: "i" };
     }
   
     let colorQueryObject = {};
@@ -104,7 +137,7 @@ const handleGetAllProduct = asyncHandler(async (req: Request, res: Response) => 
   
     const qr = { ...colorQueryObject, ...formatQuery, ...queryObj };
   
-    let queryCommand = Product.find(qr);
+    let queryCommand = Product.find(qr).populate("shopListId", "nameShop");
   
     //Sorting
     if (req.query.sort) {
@@ -253,5 +286,7 @@ export default {
     handleGetAllProduct,
     handleUpdateProductById,
     handleDeleteProductById,
-    handleRatings
+    handleRatings,
+    handleGetProductByShopId,
+    handleGetProductByCategoryId
 }

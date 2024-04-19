@@ -3,33 +3,38 @@ import ShopList, { IShopList } from "../models/shopList";
 const asyncHandler = require("express-async-handler");
 import slugify from "slugify";
 
+
 interface CustomRequest extends Request {
     files: any;
+    file: any
 }
 
 const handleCreateShopList = asyncHandler(async (req: CustomRequest, res: Response) => {
-    const { address, nameShop } = req.body;
-    console.log("Check body: ", req.body);
-        if (!address || !nameShop ) {
-            return res.status(400).json({
+    const { address, shopName, categoryProductList } = req.body;
+    const thumb = req?.file?.path;
+    console.log("Check thumb: ", thumb);
+    if (!address || !shopName || !categoryProductList) {
+        return res.status(400).json({
             success: false,
             mes: "Missing params",
-            });
-        }
-        const thumb = req?.files?.thumb[0]?.path;
-        
-        if (thumb) {
-            req.body.thumb = thumb;
-        }
-    
-        if (req.body && req.body.nameShop) {
-            req.body.slug = slugify(req.body.nameShop);
-        }
-        const response = await ShopList.create(req.body);
-        return res.status(200).json({
-          success: response ? true : false,
-          mes: response ? "Create shop list successfully" : "Something wrong",
         });
+    }
+
+    if (thumb) {
+        req.body.thumb = thumb;
+    }
+
+    if (req.body.shopName) {
+        req.body.slug = slugify(req.body.shopName);
+    }
+
+    console.log("Check body: ", req.body);
+
+    const response = await ShopList.create(req.body);
+    return res.status(200).json({
+        success: response ? true : false,
+        mes: response ? "Create shop list successfully" : "Something wrong",
+    });
 });
 
 const handleDeleteShopList = asyncHandler(async (req : Request, res : Response) => {
@@ -84,9 +89,22 @@ const handleGetShopLists = asyncHandler(async (req: Request, res: Response) => {
         });
 });
 
+const handleGetShopListById = asyncHandler(async (req: Request, res: Response) => {
+    const { sid } = req.params;
+    if (!sid) {
+        throw new Error("Missing shop list id");
+    }
+    const shopLists = await ShopList.findById({ _id: sid });
+    return res.status(200).json({
+      success: shopLists ? true : false,
+      data: shopLists ? shopLists : "Something wrong",
+    });
+});
+
 export default {
     handleCreateShopList,
     handleDeleteShopList,
     handleUpdateShopList,
-    handleGetShopLists
+    handleGetShopLists,
+    handleGetShopListById
 }

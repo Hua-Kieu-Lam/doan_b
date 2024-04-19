@@ -31,5 +31,7 @@ router.delete(
   ProductController.handleDeleteProductById
 );
 router.get("/:pid", ProductController.handleGetProductById);
+router.get("/get-product-shop/:sid", ProductController.handleGetProductByShopId);
+router.get("/get-product-category/:pid", ProductController.handleGetProductByCategoryId);
 
 export default router

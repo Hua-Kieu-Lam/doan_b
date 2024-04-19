@@ -14,6 +14,11 @@ router.put("/update-address", verifyJWT, UserController.handleUpdateAddress);
 router.put("/update-cart", verifyJWT, UserController.handleUpdateCart);
 router.put('/update-by-admin/:uid',verifyJWT, UserController.handleUpdateUserByAdmin); // kiem tra la admin
 router.delete('/delete/:uid', UserController.handleDeleteUser);
+router.delete(
+    "/remove-cart/:pid/:color",
+    [verifyJWT],
+    UserController.handleRemoveInCart
+  );
 
 
 export default router

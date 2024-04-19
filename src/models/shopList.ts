@@ -12,7 +12,7 @@ const shopListSchema: Schema = new Schema(
       type: String,
       required: true,
     },
-    nameShop: {
+    shopName: {
       type: String,
       required: true,
       index: true,
@@ -26,6 +26,10 @@ const shopListSchema: Schema = new Schema(
     thumb: {
       type: String,
     },
+    categoryProductList: {
+      type: Array,
+      require: true
+    }
   },
   {
     timestamps: true,

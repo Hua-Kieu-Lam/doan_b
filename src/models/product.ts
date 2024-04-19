@@ -57,7 +57,7 @@ const productSchema: Schema = new Schema(
     },
     categoryId: {
       type: Types.ObjectId,
-      ref: "Role",
+      ref: "Category",
     },
     shopListId: {
       type: Types.ObjectId,
@@ -106,14 +106,11 @@ const productSchema: Schema = new Schema(
         images: [String],
         title: String,
         sku: String,
+        //quantity: Number
       },
     ],
     isDeleted: {
       type: Boolean,
-      default: false,
-    },
-    avatar: {
-      type: String,
       default: false,
     },
   },

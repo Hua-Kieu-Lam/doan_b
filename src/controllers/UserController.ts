@@ -14,14 +14,34 @@ const handleCreateCurrentUser = async (req: Request, res: Response) => {
      */
     try {
         const { auth0Id } = req.body;
-        const existingUser = await User.findOne({ auth0Id });
+      const existingUser = await User.findOne({ auth0Id });
+      
+      const payload = {
+        _id: existingUser && existingUser._id,
+        auth0Id: auth0Id,
+        role: existingUser ? existingUser.roleId : "R01",
+      };
+      //Tao access token
+      const token = createJWT(payload);
+        
+      if (existingUser) {
+          
+          return res.status(200).json({
+            success: true,
+            access_token: token,
+            mes: "User exist",
+            data: existingUser,
+          });
+      }
+      
         const newUser = new User(req.body);
-
-        if (existingUser) {
-            res.status(200).send()
-        }
         await newUser.save();
-        res.status(201).json(newUser.toObject());
+        return res.status(200).json({
+          success: true,
+          access_token: token,
+          data: newUser,
+          mes: "Login successfully",
+        });
     }
     catch (err) {
         console.log(err)
@@ -30,7 +50,8 @@ const handleCreateCurrentUser = async (req: Request, res: Response) => {
 }
 
 const handleGetUserCurrent = asyncHandler (async(req: CustomRequest, res: Response): Promise<void> => {
-    const { _id } = req.user
+  const { _id } = req.user;
+  console.log("id:: ", _id);
     if (!_id) {
       res.status(400).json({
         success: false,
@@ -249,14 +270,14 @@ const handleUpdateAddress = asyncHandler(async (req: CustomRequest, res: Respons
 
 const handleUpdateCart = asyncHandler(async (req: CustomRequest, res: Response) => {
   const { _id } = req.user;
-  const { pid, quantity, color } = req.body;
-  if (!pid || !quantity || !color) {
+  const { pid, quantity = 1, color, thumbnail, title, price } = req.body;
+  if (!pid || !color) {
     throw new Error("Missing input");
   }
   const userCart = await User.findById(_id);
-  console.log("Check user in product cart: ", userCart);
+
   const alreadyProduct = userCart?.cart?.find(
-    (el) => el.product.toString() === pid
+    (el) => el.product.toString() === pid && el.color === color
   );
   if (alreadyProduct) {
     if (alreadyProduct.color == color) {
@@ -267,19 +288,23 @@ const handleUpdateCart = asyncHandler(async (req: CustomRequest, res: Response) 
       );
       return res.status(200).json({
         success: response ? true : false,
-        data: response ? response : "Something wrong",
+        data: response ? "Added to cart" : "Something wrong",
       });
     } else {
       const response = await User.findByIdAndUpdate(
         {
           _id: _id,
         },
-        { $push: { cart: { product: pid, quantity, color } } },
+        {
+          $push: {
+            cart: { product: pid, quantity, color, thumbnail, title, price },
+          },
+        },
         { new: true }
       ).select("-password -roleId");
       return res.status(200).json({
         success: response ? true : false,
-        data: response ? response : "Something wrong",
+        data: response ? "Added to cart" : "Something wrong",
       });
     }
   } else {
@@ -287,14 +312,45 @@ const handleUpdateCart = asyncHandler(async (req: CustomRequest, res: Response) 
       {
         _id: _id,
       },
-      { $push: { cart: { product: pid, quantity, color } } },
+      {
+        $push: {
+          cart: { product: pid, quantity, color, thumbnail, title, price },
+        },
+      },
       { new: true }
-    ).select("-password -role");
+    ).select("-password -roleId");
     return res.status(200).json({
       success: response ? true : false,
-      data: response ? response : "Something wrong",
+      data: response ? "Added to cart" : "Something wrong",
     });
   }
+});
+
+const handleRemoveInCart = asyncHandler(async (req: CustomRequest, res: Response) => {
+  const { _id } = req.user;
+  const { pid, color } = req.params;
+
+  const userCart = await User.findById(_id);
+  const alreadyProduct = userCart?.cart?.find(
+    (el) => el.product.toString() === pid && el.color === color
+  );
+  if (!alreadyProduct) {
+    return res.status(200).json({
+      success: true,
+      data: "Updated your cart"
+    });
+  }
+  const response = await User.findByIdAndUpdate(
+    {
+      _id: _id,
+    },
+    { $pull: { cart: { product: pid, color } } },
+    { new: true }
+  ).select("-password -roleId");
+  return res.status(200).json({
+    success: response ? true : false,
+    data: response ? "Updated your cart" : "Something wrong",
+  });
 });
 
 
@@ -308,5 +364,6 @@ export default {
     handleUpdateUserByAdmin,
     handleGetAllUser,
     handleUpdateAddress,
-    handleUpdateCart
+    handleUpdateCart,
+    handleRemoveInCart
 }
